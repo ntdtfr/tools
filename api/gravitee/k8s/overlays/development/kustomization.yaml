@@ -1,0 +1,17 @@
+# krakend/k8s/overlays/development/kustomization.yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - includeSelectors: true
+    pairs:
+      flexwiz.io/env: development
+
+resources:
+  - ../../base
+
+patches:
+  - path: patches/configmap.yaml
+  - path: patches/deployment.yaml
+  - path: patches/ingress.yaml

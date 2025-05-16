@@ -1,0 +1,127 @@
+# gravitee/k8s/base/management-api/deployment.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: management-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      flexwiz.io/app: management-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        flexwiz.io/app: management-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /management/metrics
+        prometheus.io/port: "8083"
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - management-api
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsNonRoot: true
+      containers:
+      - name: management-api
+        image: graviteeio/apim-management-api:latest
+        imagePullPolicy: Always
+        env:
+        - name: GRAVITEE_MANAGEMENT_MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-credentials
+              key: uri
+        - name: GRAVITEE_MANAGEMENT_MONGODB_DBNAME
+          value: gravitee
+        - name: GRAVITEE_ANALYTICS_ELASTICSEARCH_ENDPOINTS_0
+          valueFrom:
+            configMapKeyRef:
+              name: management-api-config
+              key: es_endpoint
+        - name: GRAVITEE_SMTP_ENABLED
+          value: "false"
+        - name: GRAVITEE_SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: management-api-config
+              key: smtp_host
+              optional: true
+        - name: GRAVITEE_SMTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: management-api-config
+              key: smtp_port
+              optional: true
+        - name: GRAVITEE_MANAGEMENT_SECURITY_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: management-api-secrets
+              key: jwt_secret
+        - name: GRAVITEE_MANAGEMENT_SECURITY_JWT_ISSUER
+          value: "gravitee-management-api"
+        - name: GRAVITEE_MANAGEMENT_SECURITY_JWT_EXPIRE_AFTER
+          value: "604800"
+        ports:
+        - containerPort: 8083
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /management/health
+            port: 8083
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /management/health
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 5
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: config-volume
+          mountPath: /opt/graviteeio-management-api/config
+        - name: logging-volume
+          mountPath: /opt/graviteeio-management-api/config/logging
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: config-volume
+        configMap:
+          name: management-api-config
+      - name: logging-volume
+        configMap:
+          name: management-api-logging

@@ -1,0 +1,91 @@
+# gravitee/k8s/base/management-api/configmap.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: management-api-config
+data:
+  gravitee.yml: |-
+    # Management API configuration
+    management:
+      type: mongodb
+      mongodb:
+        dbname: gravitee
+        host: mongodb
+        port: 27017
+
+    # Analytics configuration
+    analytics:
+      type: elasticsearch
+      elasticsearch:
+        endpoints:
+          - http://elasticsearch:9200
+
+    # SMTP configuration
+    email:
+      enabled: false
+      host: smtp.example.com
+      port: 587
+      from: noreply@example.com
+      username: "${GRAVITEE_SMTP_USERNAME}"
+      password: "${GRAVITEE_SMTP_PASSWORD}"
+
+    # JWT configuration
+    jwt:
+      secret: "${GRAVITEE_MANAGEMENT_SECURITY_JWT_SECRET}"
+      issuer: "${GRAVITEE_MANAGEMENT_SECURITY_JWT_ISSUER}"
+      expireAfter: ${GRAVITEE_MANAGEMENT_SECURITY_JWT_EXPIRE_AFTER}
+
+    # Services configuration
+    services:
+      core:
+        http:
+          enabled: true
+          port: 8083
+          host: 0.0.0.0
+          secured: false
+          ssl:
+            enabled: false
+
+    # Metrics configuration
+    metrics:
+      enabled: true
+      prometheus:
+        enabled: true
+
+    # Security configuration
+    security:
+      providers:
+        - type: memory
+          users:
+            - user:
+                username: admin
+                # Generated from BCrypt - change in production
+                password: $2a$10$NG5WLbL9e7juxCD1fHAB3u0xFjQB3hN.t7N8fY.JfXSt0Uc4PDL2W
+                roles: MANAGEMENT:ADMIN, PORTAL:ADMIN
+
+  es_endpoint: http://elasticsearch:9200
+  smtp_host: smtp.example.com
+  smtp_port: "587"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: management-api-logging
+data:
+  logback.xml: |-
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
+
+        <logger name="io.gravitee" level="INFO" />
+        <logger name="org.eclipse.jetty" level="WARN" />
+        <logger name="org.springframework" level="WARN" />
+        <logger name="org.mongodb.driver" level="WARN" />
+
+        <root level="INFO">
+            <appender-ref ref="STDOUT" />
+        </root>
+    </configuration>

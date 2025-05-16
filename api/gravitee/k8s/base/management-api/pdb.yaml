@@ -1,0 +1,11 @@
+# gravitee/k8s/base/management-api/pdb.yaml
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: management-api-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      flexwiz.io/app: management-api

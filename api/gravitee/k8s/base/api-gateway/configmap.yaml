@@ -1,0 +1,111 @@
+# gravitee/k8s/base/api-gateway/configmap.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+data:
+  gravitee.yml: |-
+    management:
+      type: mongodb
+      mongodb:
+        dbname: gravitee
+        host: mongodb
+        port: 27017
+
+    services:
+      core:
+        http:
+          enabled: true
+          port: 8082
+          host: 0.0.0.0
+          authentication:
+            type: basic
+
+    ratelimit:
+      type: mongodb
+
+    reporters:
+      elasticsearch:
+        enabled: true
+        endpoints:
+          - http://elasticsearch:9200
+
+    metrics:
+      enabled: true
+      prometheus:
+        enabled: true
+
+    handlers:
+      request:
+        transaction:
+          header: X-Transaction-Id
+
+    policy:
+      api-key:
+        header: X-Gravitee-Api-Key
+
+    # Keep this in a real secret, shown here for demonstration
+    jwt:
+      secret: ${GRAVITEE_JWT_SECRET:s3cr3t}
+
+    ssl:
+      enabled: false
+
+    security:
+      providers:
+        - type: memory
+          users:
+            - user:
+                username: admin
+                # Generated from BCrypt
+                password: $2a$10$NG5WLbL9e7juxCD1fHAB3u0xFjQB3hN.t7N8fY.JfXSt0Uc4PDL2W
+                roles: MANAGEMENT:ADMIN, PORTAL:ADMIN
+
+  es_endpoint: http://elasticsearch:9200
+
+  logback.xml: |-
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <appender name="STDOUT-JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
+
+        <logger name="io.gravitee" level="INFO" />
+        <logger name="org.eclipse.jetty" level="WARN" />
+        <logger name="org.springframework" level="WARN" />
+        <logger name="org.mongodb.driver" level="WARN" />
+
+        <root level="INFO">
+            <appender-ref ref="STDOUT-JSON" />
+        </root>
+    </configuration>
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-logging
+data:
+  logback.xml: |-
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+        </appender>
+
+        <logger name="io.gravitee" level="INFO" />
+        <logger name="org.eclipse.jetty" level="WARN" />
+        <logger name="org.springframework" level="WARN" />
+        <logger name="org.mongodb.driver" level="WARN" />
+
+        <root level="INFO">
+            <appender-ref ref="STDOUT" />
+        </root>
+    </configuration>

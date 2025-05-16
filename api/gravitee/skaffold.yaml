@@ -1,0 +1,91 @@
+# gravitee/skaffold.yaml
+---
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: gravitee
+
+profiles:
+  - name: local
+    build: &build
+      tagPolicy:
+        sha256: {}
+      # artifacts:
+      #   - image: gravitee
+      #     context: .
+      #     docker:
+      #       dockerfile: Dockerfile
+      #       target: final
+      # local:
+      #   useBuildkit: true
+      #   concurrency: 0
+    deploy: &deploy
+      kubeContext: minikube
+      kubectl: {}
+    manifests: &manifests
+      kustomize:
+        paths:
+          - ./k8s/overlays/development
+    portForward: &portForward
+      - resourceType: service
+        resourceName: gravitee-management-ui
+        namespace: fw-api
+        port: 8080
+        localPort: 8080
+      - resourceType: service
+        resourceName: gravitee-gateway
+        namespace: fw-api
+        port: 8082
+        localPort: 8082
+      - resourceType: service
+        resourceName: gravitee-management-api
+        namespace: fw-api
+        port: 8083
+        localPort: 8083
+      - resourceType: service
+        resourceName: gravitee-am-gateway
+        namespace: fw-api
+        port: 8092
+        localPort: 8092
+
+  # - name: gcp
+  #   build:
+  #     tagPolicy:
+  #       sha256: {}
+  #     googleCloudBuild:
+  #       workerPool: projects/flexwiz/locations/europe-west9/workerPools/worker-development-pool
+  #       projectId: flexwiz
+  #       concurrency: 0
+  #     artifacts:
+  #       - image: gravitee
+  #         kaniko:
+  #           dockerfile: Dockerfile
+  #           target: development
+  #           cache: {}
+    # deploy:
+    #   kubeContext: gke_flexwiz_europe-west9-b_fw-k8s-development-cluster
+    #   kubectl: {}
+    # manifests: *manifests
+    # portForward: *portForward
+
+  - name: development
+    build: *build
+    deploy: *deploy
+    manifests: *manifests
+    portForward: *portForward
+
+  - name: staging
+    deploy: *deploy
+    manifests:
+      kustomize:
+        paths:
+          - ./k8s/overlays/staging
+    portForward: *portForward
+
+  - name: production
+    deploy: *deploy
+    manifests:
+      kustomize:
+        paths:
+          - ./k8s/overlays/production
+    portForward: *portForward

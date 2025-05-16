@@ -1,0 +1,20 @@
+# gravitee/k8s/base/api-gateway/kustomization.yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fw-api
+
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+
+configMapGenerator:
+  - name: gateway-config
+    behavior: merge
+    literals:
+    - GRAVITEE_MANAGEMENT_TYPE=mongodb
+    - GRAVITEE_RATELIMIT_TYPE=mongodb
+    - GRAVITEE_REPORTERS_ELASTICSEARCH_ENABLED=true

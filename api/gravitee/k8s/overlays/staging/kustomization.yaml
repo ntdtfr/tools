@@ -1,0 +1,21 @@
+# gravitee/k8s/overlays/staging/kustomization.yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - includeSelectors: true
+    pairs:
+      flexwiz.io/env: staging
+
+resources:
+  - ../../base
+
+patches:
+  - path: patches/configmap.yaml
+  - path: patches/deployment.yaml
+  - path: patches/ingress.yaml
+
+images:
+  - name: devopsfaith/gravitee
+    newTag: "2.9"
